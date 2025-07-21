@@ -1,6 +1,7 @@
 name: Auto Sign-in
 on:
   schedule:
+    # Runs at 8am UTC every day
     - cron: '0 8 * * *'
   workflow_dispatch:
 
@@ -8,54 +9,42 @@ jobs:
   signin:
     runs-on: ubuntu-latest
     steps:
-      - name: Check and perform sign-in
+      - name: Perform Sign-in
         run: |
-          # Get secrets
-          USER_ID="${{ secrets.USER_ID }}"
-          TOKEN="${{ secrets.AUTHORIZATION_TOKEN }}"
+          USER_ID=${{ secrets.USER_ID }}
+          TOKEN=${{ secrets.AUTHORIZATION_TOKEN }}
           
-          # Debug: Print the type and value of USER_ID (masked for security)
-          echo "Checking USER_ID (value masked for security)..."
-          echo "USER_ID length: ${#USER_ID}"
-          echo "USER_ID is numeric: $( [[ "$USER_ID" =~ ^[0-9]+$ ]] && echo "Yes" || echo "No" )"
-          
-          # Verify USER_ID is numeric
+          # Validate USER_ID is a number
           if ! [[ "$USER_ID" =~ ^[0-9]+$ ]]; then
-            echo "❌ ERROR: USER_ID must contain only digits (0-9)"
-            echo "Current USER_ID value: (hidden for security)"
-            echo "Please check your repository secrets and ensure USER_ID is set correctly"
+            echo "Error: USER_ID must be a numeric value"
             exit 1
           fi
           
-          echo "✅ USER_ID format is valid"
-          
-          # Perform the API request
-          echo "Making API request..."
           response=$(curl -s -X POST \
             -H "Authorization: Bearer $TOKEN" \
             -H "Content-Type: application/x-www-form-urlencoded" \
             -d "user_id=$USER_ID" \
             "https://api.locyanfrp.cn/v2/sign")
           
-          # Debug output
-          echo "API Response:"
+          echo "Raw response: $response"
+          
+          # Pretty-print JSON if response is valid
           if jq -e . >/dev/null 2>&1 <<<"$response"; then
+            echo "Formatted response:"
             echo "$response" | jq .
-            status=$(echo "$response" | jq -r '.status')
-            message=$(echo "$response" | jq -r '.message')
-            
-            if [ "$status" == "0" ]; then
-              echo "🎉 Sign-in successful!"
-            else
-              echo "❌ Sign-in failed (Status: $status)"
-              echo "Message: $message"
-              exit 1
-            fi
           else
-            echo "⚠️ Invalid JSON response:"
-            echo "$response"
+            echo "Invalid JSON response"
+          fi
+          
+          # Extract status from JSON response
+          status=$(echo "$response" | jq -r '.status')
+          
+          if [ "$status" != "0" ]; then
+            echo "Sign-in failed with status: $status"
             exit 1
           fi
+          
+          echo "Sign-in successful!"
         env:
           LC_ALL: C.UTF-8
           LANG: C.UTF-8
