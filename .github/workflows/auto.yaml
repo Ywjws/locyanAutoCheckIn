@@ -1,74 +1,27 @@
-name: Auto Sign-In  # 自动签到
+name: LOCYANFRP 签到
+
 on:
   schedule:
-    - cron: '0 8 * * *'  # 每天UTC时间8点运行
+    - cron: '0 1 * * *'  # 每天 UTC+8 的 09:00 执行
   workflow_dispatch:
 
 jobs:
-  signin:  # 签到任务
+  signin:
     runs-on: ubuntu-latest
+    env:
+      APP_ID: '${{ secrets.ID }}'
+      REFRESH_TOKEN: '${{ secrets.LOCYANFRP_REFRESH_TOKEN }}'
     steps:
-      - name: Verify and Sign-In  # 验证并签到
-        run: |
-          # 获取 secrets
-          USER_ID="${{ secrets.USER_ID }}"
-          TOKEN="${{ secrets.AUTHORIZATION_TOKEN }}"
-          
-          # 验证格式
-          echo "🔍 Validating credentials..."
-          if ! [[ "$USER_ID" =~ ^[0-9]+$ ]]; then
-            echo "❌ USER_ID must be numeric"; exit 1
-          fi
-          if [[ -z "$TOKEN" ]]; then
-            echo "❌ TOKEN cannot be empty"; exit 1
-          fi
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-          # 调试输出 (不显示敏感信息)
-          echo "✅ Credentials validated"
-          echo "ℹ️ USER_ID length: ${#USER_ID}"
-          echo "ℹ️ TOKEN length: ${#TOKEN}"
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
 
-          # 发送请求
-          echo "📡 Calling API..."
-          response=$(curl -sSv -X POST \
-            -H "Authorization: Bearer $TOKEN" \
-            -H "Content-Type: application/x-www-form-urlencoded" \
-            -d "user_id=$USER_ID" \
-            "https://api.locyanfrp.cn/v2/sign" 2>&1)
+      - name: Install dependencies (if any)
+        run: pip install --upgrade pip
 
-          # 解析响应
-          echo "=== Raw Response ==="
-          echo "$response" | grep -v "Authorization:"
-          
-          # 提取JSON部分
-          json=$(echo "$response" | grep -E '^{.*}$')
-          if [ -z "$json" ]; then
-            echo "❌ Invalid API response"; exit 1
-          fi
-
-          # 使用jq解析
-          status=$(echo "$json" | jq -r '.status')
-          message=$(echo "$json" | jq -r '.message')
-          
-          echo "=== Parsed Result ==="
-          echo "$json" | jq .
-          
-          if [ "$status" == "0" ]; then
-            echo "🎉 Sign-in successful!"
-            echo "🔼 Traffic obtained: $(echo "$json" | jq -r '.data.get_traffic')MB"
-          else
-            echo "❌ Failed (Status $status)"
-            echo "📢 Error: $message"
-            
-            # 特殊处理常见错误
-            if [ "$status" == "401" ]; then
-              echo "💡 Solutions:"
-              echo "1. Check if AUTHORIZATION_TOKEN is expired"
-              echo "2. Confirm correct Token format (no 'Bearer ' prefix)"
-              echo "3. Verify account permissions"
-            fi
-            exit 1
-          fi
-        env:
-          LC_ALL: C.UTF-8
-          LANG: C.UTF-8
+      - name: Run locyanfrp_signin.py
+        run: python locyanfrp_signin.py
