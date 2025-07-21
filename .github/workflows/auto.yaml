@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       APP_ID: '${{ secrets.ID }}'
-      REFRESH_TOKEN: '${{ secrets.LOCYANFRP_REFRESH_TOKEN }}'
+      REFRESH_TOKEN: '${{ secrets.TOKEN }}'
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
