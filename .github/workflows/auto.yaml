@@ -1,35 +1,35 @@
-name: 自动签到
+name: Auto Sign-In  # 自动签到
 on:
   schedule:
-    - cron: '0 8 * * *'
+    - cron: '0 8 * * *'  # 每天UTC时间8点运行
   workflow_dispatch:
 
 jobs:
-  签到:
+  signin:  # 签到任务
     runs-on: ubuntu-latest
     steps:
-      - name: 执行签到
+      - name: Verify and Sign-In  # 验证并签到
         run: |
           # 获取 secrets
           USER_ID="${{ secrets.USER_ID }}"
           TOKEN="${{ secrets.AUTHORIZATION_TOKEN }}"
           
           # 验证格式
-          echo "🔍 验证凭据格式..."
+          echo "🔍 Validating credentials..."
           if ! [[ "$USER_ID" =~ ^[0-9]+$ ]]; then
-            echo "❌ USER_ID 必须为纯数字"; exit 1
+            echo "❌ USER_ID must be numeric"; exit 1
           fi
           if [[ -z "$TOKEN" ]]; then
-            echo "❌ TOKEN 不能为空"; exit 1
+            echo "❌ TOKEN cannot be empty"; exit 1
           fi
 
           # 调试输出 (不显示敏感信息)
-          echo "✅ 凭据格式有效"
-          echo "ℹ️ USER_ID 长度: ${#USER_ID}"
-          echo "ℹ️ TOKEN 长度: ${#TOKEN}"
+          echo "✅ Credentials validated"
+          echo "ℹ️ USER_ID length: ${#USER_ID}"
+          echo "ℹ️ TOKEN length: ${#TOKEN}"
 
           # 发送请求
-          echo "📡 正在请求API..."
+          echo "📡 Calling API..."
           response=$(curl -sSv -X POST \
             -H "Authorization: Bearer $TOKEN" \
             -H "Content-Type: application/x-www-form-urlencoded" \
@@ -37,35 +37,35 @@ jobs:
             "https://api.locyanfrp.cn/v2/sign" 2>&1)
 
           # 解析响应
-          echo "=== 原始响应 ==="
+          echo "=== Raw Response ==="
           echo "$response" | grep -v "Authorization:"
           
           # 提取JSON部分
           json=$(echo "$response" | grep -E '^{.*}$')
           if [ -z "$json" ]; then
-            echo "❌ 无效的API响应"; exit 1
+            echo "❌ Invalid API response"; exit 1
           fi
 
           # 使用jq解析
           status=$(echo "$json" | jq -r '.status')
           message=$(echo "$json" | jq -r '.message')
           
-          echo "=== 解析结果 ==="
+          echo "=== Parsed Result ==="
           echo "$json" | jq .
           
           if [ "$status" == "0" ]; then
-            echo "🎉 签到成功！"
-            echo "🔼 获得流量: $(echo "$json" | jq -r '.data.get_traffic')MB"
+            echo "🎉 Sign-in successful!"
+            echo "🔼 Traffic obtained: $(echo "$json" | jq -r '.data.get_traffic')MB"
           else
-            echo "❌ 失败 (状态码 $status)"
-            echo "📢 错误信息: $message"
+            echo "❌ Failed (Status $status)"
+            echo "📢 Error: $message"
             
             # 特殊处理常见错误
             if [ "$status" == "401" ]; then
-              echo "💡 解决方案:"
-              echo "1. 检查 AUTHORIZATION_TOKEN 是否过期"
-              echo "2. 确认Token格式正确 (不需要包含 'Bearer ' 前缀)"
-              echo "3. 确保Token有签到权限"
+              echo "💡 Solutions:"
+              echo "1. Check if AUTHORIZATION_TOKEN is expired"
+              echo "2. Confirm correct Token format (no 'Bearer ' prefix)"
+              echo "3. Verify account permissions"
             fi
             exit 1
           fi
