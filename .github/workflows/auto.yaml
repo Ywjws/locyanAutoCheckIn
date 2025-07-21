@@ -1,0 +1,37 @@
+name: Auto Sign-in
+on:
+  schedule:
+    # Runs at 8am UTC every day
+    - cron: '0 8 * * *'
+  workflow_dispatch:
+
+jobs:
+  signin:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Perform Sign-in
+        run: |
+          USER_ID=${{ secrets.USER_ID }}
+          TOKEN=${{ secrets.AUTHORIZATION_TOKEN }}
+          
+          response=$(curl -s -X POST \
+            -H "Authorization: Bearer $TOKEN" \
+            -H "Content-Type: application/x-www-form-urlencoded" \
+            -d "user_id=$USER_ID" \
+            "https://api.locyanfrp.cn/v2/sign")
+          
+          echo "Response: $response"
+          
+          # Extract status from JSON response
+          status=$(echo "$response" | jq -r '.status')
+          
+          if [ "$status" != "0" ]; then
+            echo "Sign-in failed!"
+            exit 1
+          fi
+          
+          echo "Sign-in successful!"
+        env:
+          # Required for jq to work properly
+          LC_ALL: C.UTF-8
+          LANG: C.UTF-8
