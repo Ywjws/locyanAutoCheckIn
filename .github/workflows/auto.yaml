@@ -14,24 +14,37 @@ jobs:
           USER_ID=${{ secrets.USER_ID }}
           TOKEN=${{ secrets.AUTHORIZATION_TOKEN }}
           
+          # Validate USER_ID is a number
+          if ! [[ "$USER_ID" =~ ^[0-9]+$ ]]; then
+            echo "Error: USER_ID must be a numeric value"
+            exit 1
+          fi
+          
           response=$(curl -s -X POST \
             -H "Authorization: Bearer $TOKEN" \
             -H "Content-Type: application/x-www-form-urlencoded" \
             -d "user_id=$USER_ID" \
             "https://api.locyanfrp.cn/v2/sign")
           
-          echo "Response: $response"
+          echo "Raw response: $response"
+          
+          # Pretty-print JSON if response is valid
+          if jq -e . >/dev/null 2>&1 <<<"$response"; then
+            echo "Formatted response:"
+            echo "$response" | jq .
+          else
+            echo "Invalid JSON response"
+          fi
           
           # Extract status from JSON response
           status=$(echo "$response" | jq -r '.status')
           
           if [ "$status" != "0" ]; then
-            echo "Sign-in failed!"
+            echo "Sign-in failed with status: $status"
             exit 1
           fi
           
           echo "Sign-in successful!"
         env:
-          # Required for jq to work properly
           LC_ALL: C.UTF-8
           LANG: C.UTF-8
