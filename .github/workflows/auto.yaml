@@ -21,7 +21,7 @@ jobs:
           python-version: '3.11'
 
       - name: Install dependencies (if any)
-        run: pip install --upgrade
+        run: pip install requests fake-useragent --upgrade
 
       - name: Run locyanfrp_signin.py
         run: python locyanfrp_signin.py
