@@ -56,17 +56,17 @@ def main():
         print(f"\n==== 开始处理第 {idx} 个账号 ====")
         token_result = get_access_token(app_id, refresh_token)
         if token_result.get("status") != 200:
-            print("❌ 获取 access_token 失败:", token_result.get("message", "未知错误"))
+            print("获取 access_token 失败:", token_result.get("message", "未知错误"))
             continue
 
         access_token = token_result["data"]["access_token"]
         user_id = token_result["data"]["user_id"]
-        print("✅ access_token:", access_token)
-        print("✅ user_id:", user_id)
+        print("access_token:", access_token)
+        print("user_id:", user_id)
 
         check_result = check_sign(access_token, user_id)
         if check_result.get("status") != 200:
-            print("❌ 查询签到状态失败:", check_result.get("message", "未知错误"))
+            print("查询签到状态失败:", check_result.get("message", "未知错误"))
             continue
 
         data = check_result.get("data", {})
@@ -76,7 +76,7 @@ def main():
             print("未签到，开始签到...")
             sign_result = do_sign(access_token, user_id)
             if sign_result.get("status") == 200:
-                print(f"签到成功，获得流量：{sign_result['data'].get('get_traffic', 0)}")，累计签到次数：{data.get('sign_count', 0)}，
+                print(f"签到成功，获得流量：{sign_result['data'].get('get_traffic', 0)}，累计签到次数：{data.get('sign_count', 0)}")
             else:
                 print("签到失败：", sign_result.get("message", "未知错误"))
 
