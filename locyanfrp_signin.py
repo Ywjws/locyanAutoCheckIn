@@ -1,3 +1,5 @@
+##此方案已废弃
+
 import os
 import requests
 from fake_useragent import UserAgent
