@@ -76,7 +76,7 @@ def main():
             print("未签到，开始签到...")
             sign_result = do_sign(access_token, user_id)
             if sign_result.get("status") == 200:
-                print(f"签到成功，获得流量：{sign_result['data'].get('get_traffic', 0)}")
+                print(f"签到成功，获得流量：{sign_result['data'].get('get_traffic', 0)}")，累计签到次数：{data.get('sign_count', 0)}，
             else:
                 print("签到失败：", sign_result.get("message", "未知错误"))
 
